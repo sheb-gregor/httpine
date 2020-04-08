@@ -1,0 +1,21 @@
+{
+  "__about__" : [
+    "This file provides stubs for dynamic variables used in HTTP Client",
+    "This file serves a documentation purpose and should not be modified manually",
+    "Values of this variables are generated at the runtime"
+  ],
+  "dynamicVariables": {
+    "uuid": {
+      "description": "This dynamic variable generates a new UUID-v4",
+      "sample-value": "e9e87c05-82eb-4522-bc47-f0fcfdde4cab"
+    },
+    "timestamp": {
+      "description": "This dynamic variable generates the current Unix timestamp",
+      "sample-value": "1563362218"
+    },
+    "randomInt": {
+      "description": "This dynamic variable generates a random integer between 0 and 1000",
+      "sample-value": "123"
+    }
+  }
+}
