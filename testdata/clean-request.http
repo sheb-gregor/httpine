@@ -1,0 +1,79 @@
+###
+
+# curl --location --request GET 'https://postman-echo.com/get?foo1=bar1&foo2=bar2'
+GET https://postman-echo.com/get?foo1=bar1&foo2=bar2
+
+###
+
+# curl --location --request POST 'https://postman-echo.com/post'
+#--data-urlencode 'foo1=bar1'
+#--data-urlencode 'foo2=bar2'
+POST     https://postman-echo.com/post
+Content-Type: application/x-www-form-urlencoded
+
+foo1=bar1&foo2=bar2
+
+###
+
+# curl --location --request PUT 'https://postman-echo.com/put'
+#--data-raw 'This is expected to be sent back as part of response body.'
+PUT https://postman-echo.com/put
+Content-Type: application/x-www-form-urlencoded
+
+This is expected to be sent back as part of response body.
+
+###
+
+# curl --location --request PATCH 'https://postman-echo.com/patch'
+#--data-raw 'This is expected to be sent back as part of response body.'
+PATCH https://postman-echo.com/patch
+Content-Type: application/x-www-form-urlencoded
+
+This is expected to be sent back as part of response body.
+
+###
+
+# curl --location --request DELETE 'https://postman-echo.com/delete'
+#--data-raw 'This is expected to be sent back as part of response body.'
+DELETE https://postman-echo.com/delete
+Content-Type: application/x-www-form-urlencoded
+
+This is expected to be sent back as part of response body.
+
+###
+
+# curl --location --request GET 'https://echo.getpostman.com/headers'
+#--header 'my-sample-header: Lorem ipsum dolor sit amet'
+GET https://echo.getpostman.com/headers
+my-sample-header: Lorem ipsum dolor sit amet
+
+###
+# curl --location --request GET 'https://echo.getpostman.com/auth/hawk'
+#--header 'Authorization: Hawk id="dh37fgj492je", ts="1459422734", nonce="XiwiCU", mac="KzMHk67BYCC9zZqRy5hRdWFEFLHX5bNlRWGdmOAWKp0="'
+#--form 'access_token=xyz1'
+#--form 'id=U1'
+#--form 'server_secret=zeppelin'
+#--form 'admin=true'
+POST https://echo.getpostman.com/auth/hawk
+Authorization: Hawk id="dh37fgj492je", ts="1459422734", nonce="XiwiCU", mac="KzMHk67BYCC9zZqRy5hRdWFEFLHX5bNlRWGdmOAWKp0="
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="access_token"
+
+xyz1
+--WebAppBoundary
+Content-Disposition: form-data; name="id"
+
+U1
+--WebAppBoundary
+Content-Disposition: form-data; name="server_secret"
+
+zeppelin
+--WebAppBoundary
+Content-Disposition: form-data; name="admin"
+
+true
+--WebAppBoundary--
+
+###
