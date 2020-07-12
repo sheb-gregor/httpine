@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -21,14 +20,42 @@ const (
 )
 
 func main() {
-	ctx := ClientCtx{
+	ctx := NewClientCtx()
+	err := ctx.AnalyzeDirectory("./testdata/")
+	if err != nil {
+		log.Fatal("directory analyze filed: ", err.Error())
+	}
+
+	err = ctx.ParseRequests("todo")
+	if err != nil {
+		log.Fatal("requests parsing failed: ", err.Error())
+	}
+
+	fmt.Printf("%+v\n", ctx)
+}
+
+type ClientCtx struct {
+	cookies    []parser.Cookie
+	env        map[string]map[string]interface{}
+	privateEnv map[string]map[string]interface{}
+
+	requestFiles []string
+	requests     map[string][]Request
+}
+
+func NewClientCtx() ClientCtx {
+	return ClientCtx{
 		cookies:      []parser.Cookie{},
 		env:          map[string]map[string]interface{}{},
 		privateEnv:   map[string]map[string]interface{}{},
 		requestFiles: []string{},
+		requests:     map[string][]Request{},
 	}
 
-	err := filepath.Walk("./testdata/", func(path string, info os.FileInfo, err error) error {
+}
+
+func (client *ClientCtx) AnalyzeDirectory(dirPath string) error {
+	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
@@ -41,7 +68,7 @@ func main() {
 				return errors.Wrap(err, "unable to read file")
 			}
 
-			if err = json.Unmarshal(raw, &ctx.env); err != nil {
+			if err = json.Unmarshal(raw, &client.env); err != nil {
 				return errors.Wrap(err, "unable to parse cookies")
 			}
 
@@ -52,68 +79,73 @@ func main() {
 				return errors.Wrap(err, "unable to read file")
 			}
 
-			if err = json.Unmarshal(raw, &ctx.privateEnv); err != nil {
+			if err = json.Unmarshal(raw, &client.privateEnv); err != nil {
 				return errors.Wrap(err, "unable to unmarshal private env")
 			}
 
 		case ClientCookies:
 			log.Println("found cookies..")
-			ctx.cookies, err = parser.ParseCookies(path)
+			client.cookies, err = parser.ParseCookies(path)
 			if err != nil {
 				return errors.Wrap(err, "unable to parse cookies")
 			}
 		default:
 			if ext := filepath.Ext(path); ext == ".http" {
 				log.Println("found http requests set", info.Name())
-				ctx.requestFiles = append(ctx.requestFiles, path)
+				client.requestFiles = append(client.requestFiles, path)
 			}
 		}
 		return nil
 	})
 
 	if err != nil {
-		log.Fatal("directory analise filed : ", err.Error())
+		return err
 	}
 
-	ctx.mergeEnv()
-	ctx.parseRequestFiles()
-	fmt.Printf("%+v\n", ctx)
+	client.mergeEnv()
+	return nil
 }
 
-type ClientCtx struct {
-	cookies      []parser.Cookie
-	env          map[string]map[string]interface{}
-	privateEnv   map[string]map[string]interface{}
-	requestFiles []string
-}
-
-func (c *ClientCtx) mergeEnv() {
-	for env := range c.privateEnv {
-		if _, ok := c.env[env]; !ok {
-			c.env[env] = map[string]interface{}{}
+func (client *ClientCtx) mergeEnv() {
+	for env := range client.privateEnv {
+		if _, ok := client.env[env]; !ok {
+			client.env[env] = map[string]interface{}{}
 		}
 
-		for key, val := range c.privateEnv[env] {
-			c.env[env][key] = val
+		for key, val := range client.privateEnv[env] {
+			client.env[env][key] = val
 		}
 	}
 }
 
-func (c *ClientCtx) parseRequestFiles() error {
-	for _, file := range c.requestFiles {
-		raw, _ := ioutil.ReadFile(file)
+func (client *ClientCtx) ParseRequests(envName string) error {
+	for _, file := range client.requestFiles {
+		readFile, err := os.Open(file)
 
-		var metrics bytes.Buffer
-		metrics.WriteString(string(raw))
-		scanner := bufio.NewScanner(&metrics)
-
-		httpParser := httpParser{env: c.env["test"]}
-		requests, _ := httpParser.ParseRequests(scanner)
-
-		for i, request := range requests {
-			fmt.Printf("%d %+v\n", i, request)
+		if err != nil {
+			log.Fatalf("failed to open file: %s", err)
 		}
 
+		fileScanner := bufio.NewScanner(readFile)
+		fileScanner.Split(bufio.ScanLines)
+		var fileContent []string
+
+		for fileScanner.Scan() {
+			fileContent = append(fileContent, fileScanner.Text())
+		}
+
+		if err = readFile.Close(); err != nil {
+			return err
+		}
+
+		// httpParser := HTTPFileParser{env: client.env[envName]}
+		httpParser := NewHTTPParser(client.env[envName])
+		requests, err := httpParser.ParseFile(fileContent)
+		if err != nil {
+			return errors.Wrap(err, "error while parsing "+file)
+		}
+
+		client.requests[file] = requests
 	}
 
 	return nil

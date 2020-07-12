@@ -23,7 +23,7 @@ func TestURL(t *testing.T) {
 }
 
 func TestHttpParser_fillSubstitutions(t *testing.T) {
-	parser := httpParser{
+	parser := HTTPFileParser{
 		env: map[string]interface{}{
 			"host": "localhost",
 			"port": 2020,
